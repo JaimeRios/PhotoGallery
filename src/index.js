@@ -3,8 +3,15 @@
 const express = require('express');
 const path = require('path');
 const exphbs = require('express-handlebars');
-const  methodOverride = require('method-override');
-const  session = require('express-session');
+const methodOverride = require('method-override');
+const session = require('express-session');
+const multer = require('multer');
+const morgan = require('morgan');
+
+//enviroment variables
+if(process.env.NODE_ENV !=='production'){
+    require('dotenv').config();
+}
 
 const router = express.Router();
 
@@ -30,6 +37,23 @@ app.set('view engine','.hbs');
 
 //Middlewares
 //get data from view
+app.use(morgan('dev'));
+
+const storage =multer.diskStorage({
+    destination: path.join(__dirname,'public/upload'),
+    filename: (req, file,cb)=>{
+        //Rename image with time and extension
+        cb(null, new Date().getTime()+ path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage : storage,
+    dest: path.join(__dirname, 'public/upload'),
+}).single('image');
+
+app.use(upload);
+app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 app.use(methodOverride('_method'));
 app.use(session({

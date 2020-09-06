@@ -13,18 +13,28 @@
             <h3>New Image</h3>
         </div>
         <div class="card-body">
-            <form action="/images/new-images" method="POST">
-            <div class="form-group">
-                <input type="file" name="name" class="form-control" accept="image/x-png,image/gif,image/jpeg" >
-            </div>
-            <div class="form-group">
-                <textarea type="text" name="description" class="form-control" placeholder="Description"></textarea>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-primary btn-block" type="submit">
-                    Save
-                </button>
-            </div>
+            <form action="/images/new-images" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="text" name="title" class="form-control" placeholder="Image Title" >
+                </div>
+                <div class="form-group">
+                    <textarea type="text" name="description" class="form-control" placeholder="Description"></textarea>
+                </div>
+                <div class="input-group">
+                    <div class="custom-file">
+                        <input type="file" name="image" class="custom-file-input" id="inputGroupFile01" accept="image/x-png,image/gif,image/jpeg" >
+                        <label for="inputGroupFile01" class="custom-file-label">Choose File</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn btn-primary btn-block" type="submit">
+                        Save
+                    </button>
+                </div>
             </form>
         </div>
     </div>
