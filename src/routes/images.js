@@ -46,14 +46,19 @@ router.post('/images/new-images',async (req,res)=>{
     }
     else
     {
+        date =  new Date().toISOString().split('T')[0];
+        //date = new Date('2020-09-06').toISOString().split('T')[0];
+
         image = req.file.filename;
         localPath = req.file.path;
         const newImange = new Image({
             title,
             description,
+            date,
             image: req.file.filename,
             localPath : req.file.path,
             imageUrl : result.url,
+            
             public_id : result.public_id
         });
         await newImange.save();
@@ -68,4 +73,23 @@ router.get('/images/show-images', async (req, res)=>{
     res.render('images/all-images',{images});
 });
 
+router.post('/images/find',async (req,res)=>{
+    const {date,option,title} = req.body;
+
+    if(option==='Date'){
+        const images = await Image.find({
+            date : date
+        }).lean();
+        res.render('images/all-images',{images,date,option,title});
+    }
+    else if(option ==='Name') {
+        const images = await Image.find({
+            title : title
+        }).lean();
+        res.render('images/all-images',{images,date,option,title});
+    }
+
+    
+    
+});
 module.exports = router;
