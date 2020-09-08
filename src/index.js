@@ -7,6 +7,8 @@ const methodOverride = require('method-override');
 const session = require('express-session');
 const multer = require('multer');
 const morgan = require('morgan');
+const flash = require('connect-flash');
+const { nextTick } = require('process');
 
 //enviroment variables
 if(process.env.NODE_ENV !=='production'){
@@ -61,6 +63,15 @@ app.use(session({
     resave: true,
     saveUninitialized: true
 }));
+app.use(flash());
+
+
+//global variables
+app.use((req,res,next)=>{
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    next();
+})
 
 //Routes
 app.use(require('./routes/index'));

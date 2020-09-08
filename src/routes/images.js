@@ -7,15 +7,13 @@ const cloudinary = require("cloudinary");
 //enviroment variables
 require('dotenv').config();
 
-console.log(process.env.CLOUDINARY_CLOUD_NAME);
-
-
 cloudinary.config({
    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
    api_key: process.env.CLOUDINARY_API_KEY,
    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const fs=require('fs-extra');
 
 router.get('/images/add', (req, res)=>{
     res.render('images/new-image');
@@ -24,9 +22,7 @@ router.get('/images/add', (req, res)=>{
 router.post('/images/new-images',async (req,res)=>{
 
     console.log(req.file);
-    const result = await cloudinary.v2.uploader.upload(req.file.path);
-    //const result = await cloudinary.v2.uploader.upload(req.file.path, function(error, result) {console.log(result, error)});
-    console.log(result);
+    
     const {title, description} = req.body;
     const errors = [];
     if(!req.file){
@@ -46,22 +42,30 @@ router.post('/images/new-images',async (req,res)=>{
     }
     else
     {
-        date =  new Date().toISOString().split('T')[0];
-        //date = new Date('2020-09-06').toISOString().split('T')[0];
+        const {format, width, height, bytes,secure_url,public_id} = await cloudinary.v2.uploader.upload(req.file.path);
+        //const result = await cloudinary.v2.uploader.upload(req.file.path, function(error, result) {console.log(result, error)});
+        //console.log(result);
+
+        var day = new Date();
+        //yesterday.setDate(yesterday.getDate() - 1);
 
         image = req.file.filename;
         localPath = req.file.path;
         const newImange = new Image({
             title,
             description,
-            date,
+            format, 
+            width, 
+            height, 
+            bytes,
+            date: day,
             image: req.file.filename,
-            localPath : req.file.path,
-            imageUrl : result.url,
-            
-            public_id : result.public_id
+            imageUrl : secure_url,
+            public_id : public_id
         });
         await newImange.save();
+        await fs.unlink(req.file.path);
+        req.flash('success_msg','Image Added Successfully');
         //console.log(newImange)
         res.redirect('/images/show-images');
     }
@@ -88,8 +92,31 @@ router.post('/images/find',async (req,res)=>{
         }).lean();
         res.render('images/all-images',{images,date,option,title});
     }
+});
 
-    
-    
+router.get('/images/info/:id',async (req, res) =>{
+    const image =await Image.findById(req.params.id).lean();
+    res.render('images/image-info', {image});
+});
+
+router.get('/images/edit/:id',async (req, res) =>{
+    const image =await Image.findById(req.params.id).lean();
+    res.render('images/image-edit', {image});
+});
+
+router.put('/images/edit-image/:id',async (req,res)=>{
+    const {title,description} =req.body;
+    await Image.findByIdAndUpdate(req.params.id,{title,description});
+    req.flash('success_msg','Image Update Succesfully.');
+    res.redirect('/images/show-images');
+});
+
+router.delete('/images/delete/:id',async (req, res)=>{
+    const image =await Image.findById(req.params.id).lean();
+    const result = await cloudinary.v2.uploader.destroy(image.public_id);
+    console.log(result);
+    await Image.findByIdAndDelete(req.params.id);
+    req.flash('success_msg','Image Deleted Succesfully.');
+    res.redirect('/images/show-images');
 });
 module.exports = router;

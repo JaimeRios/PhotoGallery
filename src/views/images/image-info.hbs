@@ -1,0 +1,35 @@
+<div class="col-md4 mx-auto">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title d-flex justify-content-between align-items-center">
+                Image Information<a href="/images/show-images"><i class="fas fa-undo-alt fa-2x" style="color: royalblue;"></i></a>
+            </h4> 
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <h3>Title: {{image.title}}</h3>
+            </div>
+            <div class="form-group">
+                <img src="{{image.imageUrl}}" class="img-fluid" width="100%" height="200">
+            </div>
+            <div class="form-group">
+                <h3>Description: {{image.description}}</h3>
+            </div>
+            <div class="form-group">
+                <h3>Created at: {{image.date}}</h3>
+            </div>
+            <div class="form-group">
+                <h3>Bytes: {{image.bytes}}</h3>
+            </div>
+            <div class="form-group">
+                <h3>Dimensions: {{image.width}}x{{image.height}}</h3>
+            </div>
+            <div class="form-group">
+                <h3>Format: {{image.format}}</h3>
+            </div>
+            <div class="form-group">
+               
+            </div>
+        </div>
+    </div>
+</div>
