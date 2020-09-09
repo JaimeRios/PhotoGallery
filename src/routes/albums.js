@@ -3,11 +3,11 @@ const router = express.Router();
 
 
 router.get('/albums/add', (req, res)=>{
-    res.send('new albums');
+    res.render('');
 });
 
 router.get('/albums/show-albums', (req, res)=>{
-    res.send('List of albums');
+    res.render('albums/all-albums');
 });
 
 module.exports = router;

@@ -81,9 +81,18 @@ router.post('/images/find',async (req,res)=>{
     const {date,option,title} = req.body;
 
     if(option==='Date'){
-        const images = await Image.find({
-            date : date
-        }).lean();
+        const day = new Date(date);
+        day.setHours(day.getHours() +(day.getTimezoneOffset()/60));
+
+        const lastImages = await Image.find().lean();
+        images = [];
+        lastImages.forEach(element =>{
+
+            if(element.date.toDateString()=== day.toDateString())
+            {
+                images.push(element);
+            }
+        })
         res.render('images/all-images',{images,date,option,title});
     }
     else if(option ==='Name') {
