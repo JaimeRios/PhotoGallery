@@ -9,6 +9,7 @@ const multer = require('multer');
 const morgan = require('morgan');
 const flash = require('connect-flash');
 const { nextTick } = require('process');
+const favicon = require('serve-favicon')
 
 //enviroment variables
 if(process.env.NODE_ENV !=='production'){
@@ -41,6 +42,7 @@ app.set('view engine','.hbs');
 //get data from view
 app.use(morgan('dev'));
 
+app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon2.ico')));
 const storage =multer.diskStorage({
     destination: path.join(__dirname,'public/upload'),
     filename: (req, file,cb)=>{
@@ -70,6 +72,7 @@ app.use(flash());
 app.use((req,res,next)=>{
     res.locals.success_msg = req.flash('success_msg');
     res.locals.error_msg = req.flash('error_msg');
+    res.locals.idAlbum = req.flash('idAlbum');
     next();
 })
 

@@ -31,7 +31,7 @@ router.post('/images/new-images',async (req,res)=>{
         
     }
     if(!description){
-        errors.push({text:'please write a description for you image'});
+        errors.push({text:'please write a description for your image'});
     }
     if(errors.length>0){
         res.render('images/new-image',{
@@ -75,6 +75,11 @@ router.post('/images/new-images',async (req,res)=>{
 router.get('/images/show-images', async (req, res)=>{
     const images = await Image.find().lean();
     res.render('images/all-images',{images});
+});
+
+router.get('/images-album/show-album', async (req, res)=>{
+    const images = await Image.find().lean();
+    res.render('albums/show-album',{images});
 });
 
 router.post('/images/find',async (req,res)=>{
