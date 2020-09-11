@@ -1,6 +1,7 @@
 const express = require('express');
 const Album = require('../models/Album');
 const Image = require('../models/Image');
+const AlbumImage = require('../models/AlbumImage');
 const router = express.Router();
 
 
@@ -28,7 +29,6 @@ router.post('/albums/new-album', async (req, res)=>{
     }
     else
     {
- 
         var day = new Date();
         const newAlbum = new Album({
             title,
@@ -47,18 +47,69 @@ router.get('/albums/show-albums', async (req, res)=>{
     res.render('albums/all-albums',{albums});
 });
 
+
 router.get('/albums/show-addImage/:id',async (req, res) =>{
-    const idAlbum = req.params.id;
-    const images =await Image.find().lean();
-    res.render('albums/add-image-to-album', {images,idAlbum});
+    const albumId = req.params.id.replace(':','');
+    //Search all Image already in selected album 
+    const albumImage = await AlbumImage.find({albumId}).lean();;
+    const ImageIds = [];
+    
+    console.log(albumImage);
+    console.log(albumId);
+
+    albumImage.forEach(async (element)=>{
+        ImageIds.push(element.imageId);
+    });
+
+    //Search all ime no in already in album
+    const images =await Image.find({_id:{$nin:ImageIds}}).lean();
+
+    const albumId2= albumId.replace(':','');
+    console.log(albumId2);
+
+    res.render('albums/add-image-to-album', {images,albumId2});
 });
 
-router.post('/albums/addImage',async (req, res) =>{
-    //const idAlbum = req.params.id;
-   // console.log(req.params);
+router.get('/album/show-albumImages/:id', async(req, res)=>{
+    const albumId = req.params.id.replace(':','');
+    //Search all Image already in selected album 
+    const albumImage = await AlbumImage.find({albumId}).lean();;
+
+    console.log(albumImage);
+    console.log(albumId);
+
+    const ImageIds = [];
     
-    console.log(req.body);
-    const {_id} = req.body;
-    res.send('ok');
+    albumImage.forEach(async (element)=>{
+        ImageIds.push(element.imageId);
+    });
+
+    //Search all ime no in already in album
+    const images =await Image.find({_id:{$in:ImageIds}}).lean();
+
+    res.render('albums/show-album', {images,albumId});
 });
+
+router.post('/albums/add-Image',async (req, res) =>{
+    const {imageId,albumId} = req.body;
+   // const  = req.params.idAlbum;
+
+    console.log(imageId);
+    console.log(albumId);
+
+    //Increase count of image of album
+
+    const mewAlbumImage = new AlbumImage({
+        imageId,
+        albumId
+    });
+    await mewAlbumImage.save();
+    
+    await Album.update({_id: albumId},{$inc:{imageQuantity:1}}).lean();
+ 
+    req.flash('success_msg','Image Added Successfully to Album');
+    const albums = await Album.find().lean();
+    res.render('albums/all-albums',{albums});
+});
+
 module.exports = router;
