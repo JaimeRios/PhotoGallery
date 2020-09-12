@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 const Image = require('../models/Image');
+const AlbumImage = require('../models/AlbumImage');
+const Album = require('../models/Album');
 const cloudinary = require("cloudinary");
 
 //enviroment variables
@@ -125,11 +127,24 @@ router.put('/images/edit-image/:id',async (req,res)=>{
     res.redirect('/images/show-images');
 });
 
+/**
+ * Delete an image from collection of image. First seach and delete from cloudinary
+ * then delete from collection of iamge, also from any album and decrease the 
+ * albums photos quantity.
+ */
 router.delete('/images/delete/:id',async (req, res)=>{
+   
     const image =await Image.findById(req.params.id).lean();
     const result = await cloudinary.v2.uploader.destroy(image.public_id);
-    console.log(result);
+    
     await Image.findByIdAndDelete(req.params.id);
+    const albumImagetoDelete = await AlbumImage.find({imageId:req.params.id});
+    const result2 =await AlbumImage.deleteMany({imageId:req.params.id});
+    if(albumImagetoDelete.length>0){
+        albumImagetoDelete.forEach(async(element)=>{
+            await Album.update({_id:element.albumId},{$inc:{imageQuantity:-1}}).lean();
+        });
+    }
     req.flash('success_msg','Image Deleted Succesfully.');
     res.redirect('/images/show-images');
 });

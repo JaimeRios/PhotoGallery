@@ -75,9 +75,6 @@ router.get('/album/show-albumImages/:id', async(req, res)=>{
     //Search all Image already in selected album 
     const albumImage = await AlbumImage.find({albumId}).lean();;
 
-    console.log(albumImage);
-    console.log(albumId);
-
     const ImageIds = [];
     
     albumImage.forEach(async (element)=>{
@@ -92,10 +89,6 @@ router.get('/album/show-albumImages/:id', async(req, res)=>{
 
 router.post('/albums/add-Image',async (req, res) =>{
     const {imageId,albumId} = req.body;
-   // const  = req.params.idAlbum;
-
-    console.log(imageId);
-    console.log(albumId);
 
     //Increase count of image of album
 
@@ -110,6 +103,16 @@ router.post('/albums/add-Image',async (req, res) =>{
     req.flash('success_msg','Image Added Successfully to Album');
     const albums = await Album.find().lean();
     res.render('albums/all-albums',{albums});
+});
+
+
+router.delete('/albumImage/delete/:albumId/:id',async (req, res)=>{
+
+    const result =  await AlbumImage.findOneAndDelete({imageId:req.params.id,albumId : req.params.albumId});
+    await Album.update({_id: albumId},{$inc:{imageQuantity:-1}}).lean();
+     req.flash('success_msg','Image Deleted Succesfully.');
+     res.send('ok')
+     res.redirect('/album/show-albumImages/'+req.params.albumId);
 });
 
 module.exports = router;
