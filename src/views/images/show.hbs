@@ -1,0 +1,66 @@
+<div class="row">
+    <div class="container search-filters" >
+        <form action="/images/find" method="GET" enctype="multipart/form-data">
+                <div class="row justify-content-md-center">
+                    <div class="col col-lg-2 d-flex justify-content-between align-items-center">
+                        <h3>Search Conditions</h3>
+                    </div>
+                    <div class="col col-lg-2 d-flex justify-content-between align-items-center">
+                        <input type="date" id="start" name="date" value="{{date}}">
+                    </div>
+                    <div class="col-md-auto">
+                        <div class="col-md-2 d-flex justify-content-between align-items-center">
+                            Date <input type="radio" id="Date" name="option" value="Date"> <input type="radio" id="Name" name="option" value="Name"> Name
+                        </div>
+                    </div>
+                    <div class="col col-lg-2 d-flex justify-content-between align-items-center">
+                        <input type="text" name="title" class="form-control" placeholder="Image Title" value="{{title}}">
+                    </div>
+                    <div class="col col-lg-2 d-flex justify-content-between align-items-center">
+                        <button class="btn btn-primary btn-block" type="submit"> Search </button>
+                    </div>
+                </div>
+         </form>
+    </div>
+</div>
+<div class="row">
+    {{#each images}}
+     <div class="col-md-4">
+         <div class="card">
+             <div class="card-body">
+                 <h4 class="card-title d-flex justify-content-between align-items-center">
+                     {{title}} <a href="/images/info/{{_id}}"><i class="fas fa-info"></i></a><a href="/images/edit/{{_id}}"><i class="fas fa-edit"></i></a>
+                 </h4>
+                 <img src="{{imageUrl}}" class="img-fluid" alt="Girl in a jacket" width="100%" height="200">
+                 <h5>{{description}}</h5>
+                 <h5>Created at: {{date}}</h5>
+                 <form action="/images/delete/{{_id}}?_method=DELETE" method="POST">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button class="btn btn-danger btn-block btn-sm" type="submit">Delete</button>
+                 </form>
+             </div>
+         </div>
+     </div>
+    {{else}}
+        {{#each message}}
+            <div class="card mx-auto">
+                <div class="card-body">
+                    <p class="lead">{{message}}</p>
+                </div>
+            </div>
+        {{else}}
+            <div class="card mx-auto">
+                <div class="card-body">
+                    <p class="lead">There are not images yet.</p>
+                    <a href="/images/new" class="btn btn-success btn-block">Upload one</a>
+                </div>
+            </div>
+        {{/each}}
+        
+    {{/each}}
+</div>
+
+<script>
+    
+    
+</script>

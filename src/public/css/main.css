@@ -5,26 +5,9 @@ background: linear-gradient(to right, #3f2b96, #a8c0ff); /* W3C, IE 10+/ Edge, F
 
 }
 
-body {
-    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-    font-size: 14px;
-    color: #000;
-    margin: 0;
-    padding: 0;
-  }
 
-  .swiper-container {
-    width: 100%;
-    padding-top: 50px;
-    padding-bottom: 50px;
-  }
-
-  .swiper-slide {
-    background-position: center;
-    background-size: cover;
-    width: 300px;
-    height: 300px;
-
+  .prefooter{
+    height: 100px;
   }
 
   footer{
@@ -36,3 +19,10 @@ body {
       height: 100px;
       color: white;
   }
+.search-filters{
+  background-color: #2D701D; 
+  margin: 10px 0px;
+  border-radius: 10px;
+  border: #000 2px linear;
+ 
+}

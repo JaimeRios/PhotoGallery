@@ -4,7 +4,7 @@
             <h3>Edit Image</h3>
         </div>
         <div class="card-body">
-            <form action="/images/edit-image/{{image._id}}?_method=PUT" method="POST">
+            <form action="/images/edit/{{image._id}}?_method=PUT" method="POST">
                 <input type="hidden" name="_method" value="PUT">
                 <div class="form-group">
                     <input type="text" name="title" class="form-control" placeholder="Title" value="{{image.title}}">

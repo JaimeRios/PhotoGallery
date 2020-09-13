@@ -17,75 +17,47 @@ cloudinary.config({
 
 const fs=require('fs-extra');
 
-router.get('/images/add', (req, res)=>{
-    res.render('images/new-image');
+//GET routes
+
+/**
+ * Request view for add a new Image 
+ */
+router.get('/images/new', (req, res)=>{
+    res.render('images/new');
 });
 
-router.post('/images/new-images',async (req,res)=>{
-
-    console.log(req.file);
-    
-    const {title, description} = req.body;
-    const errors = [];
-    if(!req.file){
-        errors.push({text:'please select a image from your pc'});
-    }else{
-        
-    }
-    if(!description){
-        errors.push({text:'please write a description for your image'});
-    }
-    if(errors.length>0){
-        res.render('images/new-image',{
-            errors,
-            title,
-            description
-        });
-    }
-    else
-    {
-        const {format, width, height, bytes,secure_url,public_id} = await cloudinary.v2.uploader.upload(req.file.path);
-        //const result = await cloudinary.v2.uploader.upload(req.file.path, function(error, result) {console.log(result, error)});
-        //console.log(result);
-
-        var day = new Date();
-        //yesterday.setDate(yesterday.getDate() - 1);
-
-        image = req.file.filename;
-        localPath = req.file.path;
-        const newImange = new Image({
-            title,
-            description,
-            format, 
-            width, 
-            height, 
-            bytes,
-            date: day,
-            image: req.file.filename,
-            imageUrl : secure_url,
-            public_id : public_id
-        });
-        await newImange.save();
-        await fs.unlink(req.file.path);
-        req.flash('success_msg','Image Added Successfully');
-        //console.log(newImange)
-        res.redirect('/images/show-images');
-    }
-    
-});
-
-router.get('/images/show-images', async (req, res)=>{
+/**
+ * Request view for show all images added 
+ */
+router.get('/images/show', async (req, res)=>{
     const images = await Image.find().lean();
-    res.render('images/all-images',{images});
+    res.render('images/show',{images});
 });
 
-router.get('/images-album/show-album', async (req, res)=>{
-    const images = await Image.find().lean();
-    res.render('albums/show-album',{images});
+
+/**
+ * Request view for show all image information
+ */
+router.get('/images/info/:id',async (req, res) =>{
+    const image =await Image.findById(req.params.id).lean();
+    res.render('images/info', {image});
 });
 
-router.post('/images/find',async (req,res)=>{
-    const {date,option,title} = req.body;
+/**
+ * Request view for edit an image data
+ */
+router.get('/images/edit/:id',async (req, res) =>{
+    const image =await Image.findById(req.params.id).lean();
+    res.render('images/edit', {image});
+});
+
+/**
+ * Request a view to show specific Images by date or name or show all images.
+ */
+
+router.get('/images/find',async (req,res)=>{
+
+    const {date,option,title} = req.query;
 
     if(option==='Date'){
         const day = new Date(date);
@@ -100,32 +72,121 @@ router.post('/images/find',async (req,res)=>{
                 images.push(element);
             }
         })
-        res.render('images/all-images',{images,date,option,title});
+
+        console.log(images);
+        if(images.length===0){
+            const message = [];
+            message.push({message: 'There are no images for that search'});
+            res.render('images/show',{date,option,title,message});
+        }
+        else
+        {
+            res.render('images/show',{images,date,option,title});
+        }
+        
     }
     else if(option ==='Name') {
         const images = await Image.find({
             title : title
         }).lean();
-        res.render('images/all-images',{images,date,option,title});
+
+        if(images.length===0){
+            const message = [];
+            
+            message.push({message: 'There are no images for that search'});
+            res.render('images/show',{date,option,title,message});
+        }
+        else
+        {
+            res.render('images/show',{images,date,option,title});
+        }
+
+    }else{
+        const images = await Image.find().lean();
+        res.render('images/show',{images,date,option,title});
     }
 });
 
-router.get('/images/info/:id',async (req, res) =>{
-    const image =await Image.findById(req.params.id).lean();
-    res.render('images/image-info', {image});
+//POST routes
+
+/**
+ * create a new image on data base.
+ * Upload image on cloudinary
+ * Check if there is another image with the same name
+ */
+router.post('/images/new',async (req,res)=>{
+
+    const {title, description} = req.body;
+    const errors = [];
+    if(!req.file){
+        errors.push({text:'please select a image from your pc'});
+    }
+    if(!description){
+        errors.push({text:'please write a description for your image'});
+    }
+    
+    if(errors.length>0){
+        res.render('images/new',{
+            errors,
+            title,
+            description
+        });
+    }
+    else
+    {
+        const images = await Image.find({title : title}).lean();
+        if(images.length>0){
+            errors.push({text:'There is already an image whit that name.'});
+        }
+
+        if(errors.length>0){
+            res.render('images/new',{
+                errors,
+                title,
+                description
+            });
+        }
+        else
+        {
+            const {format, width, height, bytes,secure_url,public_id} = await cloudinary.v2.uploader.upload(req.file.path);
+            var day = new Date();
+            image = req.file.filename;
+            localPath = req.file.path;
+            const newImange = new Image({
+                title,
+                description,
+                format, 
+                width, 
+                height, 
+                bytes,
+                date: day,
+                image: req.file.filename,
+                imageUrl : secure_url,
+                public_id : public_id
+            });
+            await newImange.save();
+            await fs.unlink(req.file.path);
+            req.flash('success_msg','Image Added Successfully');
+            res.redirect('/images/show');
+        }
+        
+    }    
 });
 
-router.get('/images/edit/:id',async (req, res) =>{
-    const image =await Image.findById(req.params.id).lean();
-    res.render('images/image-edit', {image});
-});
 
-router.put('/images/edit-image/:id',async (req,res)=>{
+//PUT routes
+
+/**
+ * Update Image title and description
+ */
+router.put('/images/edit/:id',async (req,res)=>{
     const {title,description} =req.body;
     await Image.findByIdAndUpdate(req.params.id,{title,description});
     req.flash('success_msg','Image Update Succesfully.');
-    res.redirect('/images/show-images');
+    res.redirect('/images/show');
 });
+
+//DELETE routes
 
 /**
  * Delete an image from collection of image. First seach and delete from cloudinary
@@ -146,6 +207,7 @@ router.delete('/images/delete/:id',async (req, res)=>{
         });
     }
     req.flash('success_msg','Image Deleted Succesfully.');
-    res.redirect('/images/show-images');
+    res.redirect('/images/show');
 });
+
 module.exports = router;

@@ -26,10 +26,18 @@
                     <td>{{imageQuantity}}</td>
                     <td>{{description}}</td>
                     <td>
-                        <a href="/album/show-albumImages/:{{_id}}" class="btn btn-primary">View</a>
-                        <a href="/albums/show-addImage/:{{_id}}" class="btn btn-primary">Add Image</a>
+                        <a href="/albums/images/{{_id}}" class="btn btn-primary">View</a>
+                        <a href="/albums/newImage/{{_id}}" class="btn btn-primary">Add Image</a>
+                        <a href="/albums/edit/{{_id}}" class="btn btn-primary">Edit Album</a>
                     </td>
                     </tr>
+                {{else}}
+                    <div class="card mx-auto">
+                        <div class="card-body">
+                            <p class="lead">There are not albums yet.</p>
+                            <a href="/albums/new" class="btn btn-success btn-block">Create one</a>
+                        </div>
+                    </div>
                 {{/each}}
             </tbody>
         </table>
