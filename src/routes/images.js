@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const Image = require('../models/Image');
-const AlbumImage = require('../models/AlbumImage');
-const Album = require('../models/Album');
 const cloudinary = require("cloudinary");
+
+const ImageService = require('../service/images');
 
 //enviroment variables
 require('dotenv').config();
@@ -30,7 +29,9 @@ router.get('/images/new', (req, res)=>{
  * Request view for show all images added 
  */
 router.get('/images/show', async (req, res)=>{
-    const images = await Image.find().lean();
+
+    const images = await ImageService.readImages();
+
     res.render('images/show',{images});
 });
 
@@ -39,7 +40,9 @@ router.get('/images/show', async (req, res)=>{
  * Request view for show all image information
  */
 router.get('/images/info/:id',async (req, res) =>{
-    const image =await Image.findById(req.params.id).lean();
+
+    const image =await ImageService.findImageById(req.params.id);
+
     res.render('images/info', {image});
 });
 
@@ -47,7 +50,9 @@ router.get('/images/info/:id',async (req, res) =>{
  * Request view for edit an image data
  */
 router.get('/images/edit/:id',async (req, res) =>{
-    const image =await Image.findById(req.params.id).lean();
+
+    const image =await ImageService.findImageById(req.params.id);
+
     res.render('images/edit', {image});
 });
 
@@ -60,49 +65,35 @@ router.get('/images/find',async (req,res)=>{
     const {date,option,title} = req.query;
 
     if(option==='Date'){
-        const day = new Date(date);
-        day.setHours(day.getHours() +(day.getTimezoneOffset()/60));
+       const result = await ImageService.findImageByDate(date);
 
-        const lastImages = await Image.find().lean();
-        images = [];
-        lastImages.forEach(element =>{
-
-            if(element.date.toDateString()=== day.toDateString())
-            {
-                images.push(element);
-            }
-        })
-
-        console.log(images);
-        if(images.length===0){
-            const message = [];
-            message.push({message: 'There are no images for that search'});
+        if(result.resultOperation==='no'){
+            const message = result.message
             res.render('images/show',{date,option,title,message});
         }
         else
         {
+            const images = result.images;
             res.render('images/show',{images,date,option,title});
         }
         
     }
     else if(option ==='Name') {
-        const images = await Image.find({
-            title : title
-        }).lean();
 
-        if(images.length===0){
-            const message = [];
-            
-            message.push({message: 'There are no images for that search'});
+        const result = await ImageService.findImageByName(title);
+
+        if(result.resultOperation==='no'){
+            const message = result.message
             res.render('images/show',{date,option,title,message});
         }
         else
         {
+            const images = result.images;
             res.render('images/show',{images,date,option,title});
         }
 
     }else{
-        const images = await Image.find().lean();
+        const images = await ImageService.readImages();
         res.render('images/show',{images,date,option,title});
     }
 });
@@ -134,8 +125,8 @@ router.post('/images/new',async (req,res)=>{
     }
     else
     {
-        const images = await Image.find({title : title}).lean();
-        if(images.length>0){
+        const images = await ImageService.findImageByName(title);
+        if(images.resultOperation==='ok'){
             errors.push({text:'There is already an image whit that name.'});
         }
 
@@ -149,27 +140,35 @@ router.post('/images/new',async (req,res)=>{
         else
         {
             const {format, width, height, bytes,secure_url,public_id} = await cloudinary.v2.uploader.upload(req.file.path);
-            var day = new Date();
-            image = req.file.filename;
-            localPath = req.file.path;
-            const newImange = new Image({
-                title,
-                description,
-                format, 
-                width, 
-                height, 
-                bytes,
-                date: day,
-                image: req.file.filename,
-                imageUrl : secure_url,
-                public_id : public_id
-            });
-            await newImange.save();
+
+            if(public_id!==null){
+                var day = new Date();
+                localPath = req.file.path;
+                const newImange = {
+                    title,
+                    description,
+                    format, 
+                    width, 
+                    height, 
+                    bytes,
+                    date: day,
+                    image: req.file.filename,
+                    imageUrl : secure_url,
+                    public_id : public_id
+                };
+                
+                const result = await ImageService.createImage(newImange);
+                if(result.resultOperation==='ok'){
+                    req.flash('success_msg','Image Added Successfully');
+                }
+                else{
+                    req.flash('error_msg','Image cannot be Added');
+                }
+                
+            }
             await fs.unlink(req.file.path);
-            req.flash('success_msg','Image Added Successfully');
             res.redirect('/images/show');
         }
-        
     }    
 });
 
@@ -181,8 +180,16 @@ router.post('/images/new',async (req,res)=>{
  */
 router.put('/images/edit/:id',async (req,res)=>{
     const {title,description} =req.body;
-    await Image.findByIdAndUpdate(req.params.id,{title,description});
-    req.flash('success_msg','Image Update Succesfully.');
+    const result =await ImageService.updateImage(req.params.id, title,description);
+    
+    if(result.resultOperation==='ok')
+    {
+        req.flash('success_msg','Image Update Succesfully.');
+    }
+    else
+    {
+        req.flash('error_msg','Image can not be Updated');
+    }
     res.redirect('/images/show');
 });
 
@@ -195,18 +202,15 @@ router.put('/images/edit/:id',async (req,res)=>{
  */
 router.delete('/images/delete/:id',async (req, res)=>{
    
-    const image =await Image.findById(req.params.id).lean();
-    const result = await cloudinary.v2.uploader.destroy(image.public_id);
-    
-    await Image.findByIdAndDelete(req.params.id);
-    const albumImagetoDelete = await AlbumImage.find({imageId:req.params.id});
-    const result2 =await AlbumImage.deleteMany({imageId:req.params.id});
-    if(albumImagetoDelete.length>0){
-        albumImagetoDelete.forEach(async(element)=>{
-            await Album.update({_id:element.albumId},{$inc:{imageQuantity:-1}}).lean();
-        });
+    const result = await ImageService.deleteImageById(req.params.id);
+    if(result.resultOperation==='ok')
+    {
+        req.flash('success_msg',result.message);
     }
-    req.flash('success_msg','Image Deleted Succesfully.');
+    else
+    {
+        req.flash('success_msg',result.message);
+    } 
     res.redirect('/images/show');
 });
 

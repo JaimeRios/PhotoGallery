@@ -1,7 +1,6 @@
 const express = require('express');
-const Album = require('../models/Album');
-const Image = require('../models/Image');
-const AlbumImage = require('../models/AlbumImage');
+
+const AlbumService = require('../service/albums');
 const router = express.Router();
 
 //GET routes
@@ -17,7 +16,7 @@ router.get('/albums/new', (req, res)=>{
  * Request view to show all albums
  */
 router.get('/albums/show', async (req, res)=>{
-    const albums = await Album.find().lean();
+    const albums = await AlbumService.readAlbums();
     res.render('albums/show',{albums});
 });
 
@@ -25,7 +24,7 @@ router.get('/albums/show', async (req, res)=>{
  * Request view for edit an album data
  */
 router.get('/albums/edit/:id',async (req, res) =>{
-    const album =await Album.findById(req.params.id).lean();
+    const album =await AlbumService.findAlbumById(req.params.id);
     res.render('albums/edit', {album});
 });
 
@@ -34,24 +33,8 @@ router.get('/albums/edit/:id',async (req, res) =>{
  */
 router.get('/albums/newImage/:id',async (req, res) =>{
     const albumId = req.params.id;
-    //Search all Image already in selected album 
-    const albumImage = await AlbumImage.find({albumId}).lean();;
-    const ImageIds = [];
-    
-    console.log(albumImage);
-    console.log(albumId);
-
-    albumImage.forEach(async (element)=>{
-        ImageIds.push(element.imageId);
-    });
-
-    //Search all image no in already in album
-    const images =await Image.find({_id:{$nin:ImageIds}}).lean();
-
-    //const albumId2= albumId.replace(':','');
-    //console.log(albumId2);
-
-    res.render('albums/newImage', {images,albumId});
+    const images =await AlbumService.searchImageNotInAlbumByAlbumId(albumId);
+     res.render('albums/newImage', {images,albumId});
 });
 
 /**
@@ -59,18 +42,7 @@ router.get('/albums/newImage/:id',async (req, res) =>{
  */
 router.get('/albums/images/:id', async(req, res)=>{
     const albumId = req.params.id;
-    //Search all Image already in selected album 
-    const albumImage = await AlbumImage.find({albumId}).lean();;
-
-    const ImageIds = [];
-    
-    albumImage.forEach(async (element)=>{
-        ImageIds.push(element.imageId);
-    });
-
-    //Search all ime no in already in album
-    const images =await Image.find({_id:{$in:ImageIds}}).lean();
-
+    const images =await AlbumService.searchAllImagebyAlbumId(albumId);
     res.render('albums/images', {images,albumId});
 });
 
@@ -99,8 +71,8 @@ router.post('/albums/new', async (req, res)=>{
     }
     else
     {
-        const album = await Album.find({title : title}).lean();
-        if(album.length>0){
+        const album = await AlbumService.findAlbumByName(title);
+        if(album.resultOperation==='ok'){
             errors.push({text:'There is already an album whit the same name.'});
         }
 
@@ -114,12 +86,18 @@ router.post('/albums/new', async (req, res)=>{
         else
         {
             var day = new Date();
-            const newAlbum = new Album({
+            const newAlbum = {
                 title,
                 description,
                 date: day
-            });
-            await newAlbum.save();
+            };
+            const result = await AlbumService.createAlbum(newAlbum);
+                if(result.resultOperation==='ok'){
+                    req.flash('success_msg','Album Added Successfully');
+                }
+                else{
+                    req.flash('error_msg','Album cannot be Added');
+                }
 
             res.redirect('/albums/show');
         }
@@ -135,19 +113,16 @@ router.post('/albums/new', async (req, res)=>{
 router.post('/albums/newImage',async (req, res) =>{
     const {imageId,albumId} = req.body;
 
-    //Increase count of image of album
+    const result = AlbumService.addImagetoAlbum(albumId,imageId);
 
-    const mewAlbumImage = new AlbumImage({
-        imageId,
-        albumId
-    });
-    await mewAlbumImage.save();
-    
-    await Album.update({_id: albumId},{$inc:{imageQuantity:1}}).lean();
- 
-    req.flash('success_msg','Image Added Successfully to Album');
-    const albums = await Album.find().lean();
-    res.render('albums/show',{albums});
+    if(result.resultOperation==='ok'){
+        req.flash('success_msg','Image Added Successfully to Album');
+    }
+    else{
+        req.flash('error_msg','Image can not be Added to Album');
+    }
+
+    res.redirect('/albums/show');
 });
 
 //PUT routes
@@ -156,9 +131,18 @@ router.post('/albums/newImage',async (req, res) =>{
  * Update Album title and description
  */
 router.put('/albums/edit/:id',async (req,res)=>{
+
     const {title,description} =req.body;
-    await Album.findByIdAndUpdate(req.params.id,{title,description});
-    req.flash('success_msg','Album Update Succesfully.');
+    const result =await AlbumService.updateAlbum(req.params.id, title,description);
+    
+    if(result.resultOperation==='ok')
+    {
+        req.flash('success_msg','Album Update Succesfully.');
+    }
+    else
+    {
+        req.flash('error_msg','Album can not be Updated');
+    }
     res.redirect('/albums/show');
 });
 
@@ -169,9 +153,14 @@ router.put('/albums/edit/:id',async (req,res)=>{
  */
 router.delete('/albumImage/delete/:albumId/:id',async (req, res)=>{
 
-    const result =  await AlbumImage.findOneAndDelete({imageId:req.params.id,albumId : req.params.albumId});
-    await Album.update({_id: req.params.albumId},{$inc:{imageQuantity:-1}}).lean();
-     req.flash('success_msg','Image Deleted Succesfully.');
+    const result = await AlbumService.deleteImageFromAlbum(req.params.id, req.params.albumId);
+    if(result.resultOperation==='ok'){
+        req.flash('success_msg','Image Deleted Succesfully.');
+    }
+    else{
+        req.flash('error_msg','Image can not no be Deleted.');
+    }
+     
      res.redirect('/albums/images/'+req.params.albumId);
 });
 
